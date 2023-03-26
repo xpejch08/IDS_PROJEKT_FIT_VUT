@@ -52,28 +52,15 @@ CREATE TABLE "STORAGE_WORKER" (
 		)),
      "WAGE_IN_DOLLARS" INT NOT NULL
      );
-CREATE TABLE "MERCHANT" (
-     "id" INT GENERATED AS IDENTITY NOT NULL PRIMARY KEY,
-     "FIRST_NAME" VARCHAR(30) NOT NULL,
-     "LAST_NAME" VARCHAR(30) NOT NULL,
-     "EMAIL" VARCHAR(100) NOT NULL
-        CHECK(REGEXP_LIKE(
-            "EMAIL", '^[a-z]+[a-z0-9\.]*@[a-z0-9\.-]+\.[a-z]{2,}$', 'i'
-        )),
-     "ADDRESS" VARCHAR(100) NOT NULL
+CREATE TABLE "ORDER" (
+     --TODO
      );
 
-CREATE TABLE "INVOICE" (
-     "id" INT GENERATED AS IDENTITY NOT NULL PRIMARY KEY,
-     "DATE" DATE NOT NULL,
-     "ORDER" INT DEFAULT NULL,
-     CONSTRAINT "order_id" FOREIGN KEY (ORDER_ID) REFERENCES "ORDER" ("ID") --order id je id v tabulce zakazka
-                ON DELETE SET NULL
-    ); 
-     
-     
 CREATE TABLE "ORDER" (
-    --TODO ONDRA IS NOT SURE :()
+     --TODO
+     );
+CREATE TABLE "ORDER" (
+    --TODO
      );
 
 
