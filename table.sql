@@ -129,3 +129,48 @@ INSERT INTO "INVOICE" ("INVOICE_DATE", "COMMISION_ID")
 VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
 INSERT INTO "INVOICE" ("INVOICE_DATE", "COMMISION_ID")
 VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
+
+----------------------- SELECTING DATA---------------------------------------------
+
+SELECT p.name, s.supply_date
+FROM product p
+JOIN register r ON p.id = r.product_id
+JOIN supply s ON r.id = s.commision_id;
+
+
+--three tables
+SELECT c.id, w.first_name, w.last_name, m.first_name, m.last_name
+FROM commision c
+JOIN storage_worker w ON c.storage_worker_id = w.id
+JOIN register r ON c.register_id = r.id
+JOIN merchant m ON c.merchant_id = m.id
+WHERE r.type = 1;
+
+--group by and aggregation
+SELECT p.origin, SUM(r.amount_in_kg)
+FROM product p
+JOIN register r ON p.id = r.product_id
+WHERE r.type = 1
+GROUP BY p.origin;
+
+
+SELECT m.id, SUM(r.amount_in_kg)
+FROM merchant m
+JOIN commision c ON m.id = c.merchant_id
+JOIN register r ON c.id = r.id
+WHERE r.type = 0
+GROUP BY m.id;
+
+SELECT m.first_name, m.last_name, p.name
+FROM merchant m
+JOIN commision c ON m.id = c.merchant_id
+JOIN register r ON c.id = r.id
+JOIN product p ON r.product_id = p.id
+WHERE p.id IN (
+    SELECT r2.product_id
+    FROM register r2
+    WHERE r2.type = 0
+    GROUP BY r2.product_id
+    HAVING SUM(r2.amount_in_kg) > 1000
+);
+-- This query returns the first and last name of each merchant and the name of each product that has been purchased in total over 1000 kg.
