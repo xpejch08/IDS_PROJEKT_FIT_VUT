@@ -90,11 +90,18 @@ INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEK
 VALUES('TOMATO','SPAIN', 10, 3, 10);
 INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEKS", "IN_STOCK_IN_TONS")
 VALUES('APPLES', 'CZ', 12, 4, 20);
+INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEKS", "IN_STOCK_IN_TONS")
+VALUES('APPLES', 'FRANCE', 12, 4, 10);
+INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEKS", "IN_STOCK_IN_TONS")
+VALUES('CUCUMBERS', 'FRANCE', 12, 4, 50);
+
 
 INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
 VALUES('DOMINIK', 'MARTINU', '666666666', 'martinu@randmail.com', 10);
 INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
 VALUES('TOMAS', 'INDRUCH', '787878787', 'indruch@randmail.com', 20);
+INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
+VALUES('LADISLAV', 'DOBROMIL', '787878696', 'dobrakcz@randmail.com', 20);
 
 INSERT INTO "MERCHANT" ("FIRST_NAME", "LAST_NAME", "EMAIL", "ADDRESS")
 VALUES('STEPAN', 'PEJCHAR', 'pejchar@randmail.com', 'VEVERI 12');
@@ -102,9 +109,11 @@ INSERT INTO "MERCHANT" ("FIRST_NAME", "LAST_NAME", "EMAIL", "ADDRESS")
 VALUES('ONDREJ', 'CESKA', 'ceska@randmail.com', 'CESKA 1');
 
 INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
-VALUES(1, 100, (SELECT ID FROM PRODUCT WHERE NAME = 'APPLES'));
+VALUES(1, 100, (SELECT ID FROM PRODUCT WHERE NAME = 'APPLES' AND ORIGIN = 'FRANCE'));
 INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
 VALUES(0, 250, (SELECT ID FROM PRODUCT WHERE NAME = 'TOMATO'));
+INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
+VALUES(0, 300, (SELECT ID FROM PRODUCT WHERE NAME = 'TOMATO'));
 
 INSERT INTO "COMMISION" ("TYPE", "REGISTER_ID", "STORAGE_WORKER_ID", "MERCHANT_ID")
 VALUES(1, (SELECT ID FROM REGISTER WHERE AMOUNT_IN_KG = 250), 
@@ -131,35 +140,41 @@ INSERT INTO "INVOICE" ("INVOICE_DATE", "COMMISION_ID")
 VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
 
 ----------------------- SELECTING DATA---------------------------------------------
-
-SELECT p.name, s.supply_date
+--2 tables -- spoj tabulky register a product (v jakém rejstříku je jaký produkt)
+SELECT p.name, r.ID
 FROM product p
-JOIN register r ON p.id = r.product_id
-JOIN supply s ON r.id = s.commision_id;
+JOIN register r ON p.id = r.product_id;
+
+--2 tables -- spoj tabulky register a commision (v jaké zakázce je jaký rejstřík, kolik váží jeho produkt a kdo má zakázku má na starosti)
+SELECT s.register_id, r.amount_in_kg, s.STORAGE_WORKER_ID
+FROM register r
+JOIN commision s ON r.id = s.register_id;
 
 
---three tables
-SELECT c.id, w.first_name, w.last_name, m.first_name, m.last_name
+
+--3 tables --(id objednávky, jméno a příjmení zaměstnance, který ji má na starosti, a jméno a příjmení obchodníka, kterého se týká)
+SELECT c.id, w.first_name AS krestni_skladnika, w.last_name AS prijmeni_skladnika, m.first_name AS krestni_obchodnika, m.last_name  AS prijmeni_obchodnika
 FROM commision c
 JOIN storage_worker w ON c.storage_worker_id = w.id
-JOIN register r ON c.register_id = r.id
-JOIN merchant m ON c.merchant_id = m.id
-WHERE r.type = 1;
+JOIN merchant m ON c.merchant_id = m.id;
 
---group by and aggregation
+--group by -- (celková hmotnost prodaného zboží podle země původu)(vyskytlo se v rejstříku objednávky)
 SELECT p.origin, SUM(r.amount_in_kg)
 FROM product p
 JOIN register r ON p.id = r.product_id
-WHERE r.type = 1
 GROUP BY p.origin;
 
 
-SELECT m.id, SUM(r.amount_in_kg)
-FROM merchant m
-JOIN commision c ON m.id = c.merchant_id
-JOIN register r ON c.id = r.id
-WHERE r.type = 0
-GROUP BY m.id;
+
+SELECT distinct c.id, c.type
+FROM product p, register c
+WHERE EXISTS (
+    SELECT 
+    FROM PRODUCT p, register c
+    JOIN register c ON p.id = c.product_id
+    WHERE p.origin = 'FRANCE'
+);
+-- This query returns the name of each product that has been purchased at least once.
 
 SELECT m.first_name, m.last_name, p.name
 FROM merchant m
