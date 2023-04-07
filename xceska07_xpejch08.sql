@@ -152,7 +152,7 @@ JOIN commision s ON r.id = s.register_id;
 
 
 
---3 tables --(id objednávky, jméno a příjmení zaměstnance, který ji má na starosti, a jméno a příjmení obchodníka, kterého se týká)
+--3 tables --(id objednávky, jméno a příjmení zaměstnance, který ji má na starosti, a jméno a příjmení obchodníka, kterého se objednávka týká)
 SELECT c.id, w.first_name AS krestni_skladnika, w.last_name AS prijmeni_skladnika, m.first_name AS krestni_obchodnika, m.last_name  AS prijmeni_obchodnika
 FROM commision c
 JOIN storage_worker w ON c.storage_worker_id = w.id
@@ -166,16 +166,20 @@ GROUP BY p.origin;
 
 
 
-SELECT distinct c.id, c.type
-FROM product p, register c
-WHERE EXISTS (
-    SELECT 
-    FROM PRODUCT p, register c
-    JOIN register c ON p.id = c.product_id
-    WHERE p.origin = 'FRANCE'
-);
--- This query returns the name of each product that has been purchased at least once.
 
+
+-- EXISTS -- (vrací id, název a původ produktu, který se vyskytuje v rejstříku objednávky právě jednou nebo nulakrát)
+SELECT DISTINCT p.id, p.name, p.origin
+FROM PRODUCT p
+WHERE NOT EXISTS (
+  SELECT *
+  FROM REGISTER r
+  WHERE r.PRODUCT_ID = p.ID
+  GROUP BY r.PRODUCT_ID
+  HAVING COUNT(*) > 1
+);
+
+--IN -- (Vrací jméno a příjmení obchodníka a název produktu, který byl prodán v celkovém mmnožství větší než 400 kg)
 SELECT m.first_name, m.last_name, p.name
 FROM merchant m
 JOIN commision c ON m.id = c.merchant_id
@@ -186,6 +190,6 @@ WHERE p.id IN (
     FROM register r2
     WHERE r2.type = 0
     GROUP BY r2.product_id
-    HAVING SUM(r2.amount_in_kg) > 1000
+    HAVING SUM(r2.amount_in_kg) > 400
 );
--- This query returns the first and last name of each merchant and the name of each product that has been purchased in total over 1000 kg.
+
