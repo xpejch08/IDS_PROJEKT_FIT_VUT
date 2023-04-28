@@ -201,7 +201,6 @@ GROUP BY p.origin;
 
 
 
-<<<<<<< HEAD
 SELECT p.ID, p.NAME, p.ORIGIN
 FROM product p
 WHERE EXISTS (
@@ -212,8 +211,6 @@ WHERE EXISTS (
 GROUP BY p.ID, p.NAME, p.ORIGIN;
 
 -- This query returns the name of each product that has been purchased at least once.
-=======
->>>>>>> 0785f08a79fd2bfc65cf701a491c6e310a544d2d
 
 
 -- EXISTS -- (vrací id, název a původ produktu, který se vyskytuje v rejstříku objednávky právě jednou nebo nulakrát)
@@ -240,8 +237,5 @@ WHERE p.id IN (
     GROUP BY r2.product_id
     HAVING SUM(r2.amount_in_kg) > 400
 );
-<<<<<<< HEAD
 -- This query returns the first and last name of each merchant and the name of each product that has been purchased in total over 1000 kg.
-=======
->>>>>>> 0785f08a79fd2bfc65cf701a491c6e310a544d2d
 
