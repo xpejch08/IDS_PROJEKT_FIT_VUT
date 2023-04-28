@@ -244,7 +244,6 @@ WHERE p.id IN (
 ------------PROCEDURES-----------------
 
 -- Procedure that returns the average wage of a storage worker with a given first name.
-SET SERVEROUTPUT ON;
 
 CREATE OR REPLACE PROCEDURE CalculateAvgWageFirstName
     (First IN STORAGE_WORKER.FIRST_NAME%TYPE)
@@ -258,4 +257,34 @@ BEGIN
 END;
 /
 -- Testing of this procedure. Expecting 25.5, since one worker has 21$ and the other 30$.
+
+
 EXECUTE CalculateAvgWageFirstName('TOMAS');
+
+CREATE OR REPLACE PROCEDURE calculate_avg_tomato_price AS
+  CURSOR produkty IS SELECT * FROM PRODUCT;
+  nevalidniProdukty INTEGER;
+  seznamProduktu produkty%ROWTYPE;
+  BEGIN
+    nevalidniProdukty := 0;
+    OPEN produkty;
+    LOOP
+      FETCH produkty INTO seznamProduktu;
+      EXIT WHEN produkty%NOTFOUND;
+      IF seznamProduktu.IN_STOCK_IN_TONS < 0 THEN
+        dbms_output.put_line('Produkt id: ' || seznamProduktu.ID);
+        dbms_output.put_line('Produkt id: ' || seznamProduktu.NAME);
+        dbms_output.put_line('Produkt id: ' || seznamProduktu.ORIGIN);
+        dbms_output.put_line('Produkt id: ' || seznamProduktu.IN_STOCK_IN_TONS);
+        nevalidniProdukty := nevalidniProdukty + 1;
+      END IF;
+    END LOOP;
+    dbms_output.put_line('Pocet vadnych položek: ' || nevalidniProdukty);
+    CLOSE produkty;
+    EXCEPTION WHEN NO_DATA_FOUND THEN
+          RAISE_APPLICATION_ERROR(-20003, 'No products in database');
+          WHEN OTHERS THEN 
+          RAISE_APPLICATION_ERROR(-20004, 'OTHER ERROR');
+  END;  
+/
+BEGIN calculate_avg_tomato_price();END; 
