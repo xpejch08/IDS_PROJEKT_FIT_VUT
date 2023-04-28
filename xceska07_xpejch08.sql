@@ -131,6 +131,8 @@ INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL"
 VALUES('TOMAS', 'INDRUCH', '787878787', 'indruch@randmail.com', 20);
 INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
 VALUES('LADISLAV', 'DOBROMIL', '787878696', 'dobrakcz@randmail.com', 20);
+INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
+VALUES('TOMAS', 'ALFONZ', '787878777', 'alfonz@randmail.com', 30);
 
 INSERT INTO "MERCHANT" ("FIRST_NAME", "LAST_NAME", "EMAIL", "ADDRESS")
 VALUES('STEPAN', 'PEJCHAR', 'pejchar@randmail.com', 'VEVERI 12');
@@ -239,3 +241,21 @@ WHERE p.id IN (
 );
 -- This query returns the first and last name of each merchant and the name of each product that has been purchased in total over 1000 kg.
 
+------------PROCEDURES-----------------
+
+-- Procedure that returns the average wage of a storage worker with a given first name.
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE PROCEDURE CalculateAvgWageFirstName
+    (First IN STORAGE_WORKER.FIRST_NAME%TYPE)
+AS
+    AvgWage FLOAT;
+BEGIN
+    SELECT AVG(WAGE_IN_DOLLARS) INTO AvgWage
+    FROM STORAGE_WORKER
+    WHERE FIRST_NAME = First;
+    DBMS_OUTPUT.PUT_LINE('The average wage for ' || First || ' is ' || AvgWage || '$' );
+END;
+/
+-- Testing of this procedure. Expecting 25.5, since one worker has 21$ and the other 30$.
+EXECUTE CalculateAvgWageFirstName('TOMAS');
