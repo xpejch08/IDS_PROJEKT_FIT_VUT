@@ -84,6 +84,34 @@ CREATE TABLE INVOICE (
      COMMISION_ID INT REFERENCES COMMISION(ID) ON DELETE SET NULL
 );
 
+-------------------------TRIGGERS---------------------------
+---this trigger triggers every time the a new register is made, it subtracts/ads the the amount in kg used in the supply/order used in the register
+CREATE OR REPLACE TRIGGER update_stock
+AFTER INSERT OR UPDATE ON register
+FOR EACH ROW
+BEGIN
+  IF :new.TYPE = 1 THEN
+    UPDATE product SET in_stock_in_tons = in_stock_in_tons - :new.amount_in_kg/1000 WHERE id = :new.product_id;
+  ELSE
+    UPDATE product SET in_stock_in_tons = in_stock_in_tons + :new.amount_in_kg/1000 WHERE id = :new.product_id;
+  END IF;
+END;
+/
+
+
+---this trigger increments the wage in dollars of a worker every time he does some work by handeling a commision
+CREATE OR REPLACE TRIGGER increment_storage_worker_wage
+AFTER INSERT ON COMMISION
+FOR EACH ROW
+WHEN (NEW.STORAGE_WORKER_ID IS NOT NULL)
+BEGIN
+  UPDATE STORAGE_WORKER
+  SET WAGE_IN_DOLLARS = WAGE_IN_DOLLARS + 1
+  WHERE ID = :NEW.STORAGE_WORKER_ID;
+END;
+/
+
+
 -----------------------INSERTING DATA-----------------------
 
 INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEKS", "IN_STOCK_IN_TONS")
@@ -94,6 +122,7 @@ INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEK
 VALUES('APPLES', 'FRANCE', 12, 4, 10);
 INSERT INTO "PRODUCT" ("NAME", "ORIGIN", "PRICE_IN_DOLLARS_FOR_KG", "AGE_IN_WEEKS", "IN_STOCK_IN_TONS")
 VALUES('CUCUMBERS', 'FRANCE', 12, 4, 50);
+
 
 
 INSERT INTO "STORAGE_WORKER" ("FIRST_NAME", "LAST_NAME", "PHONE_NUMBER", "EMAIL", "WAGE_IN_DOLLARS")
@@ -108,8 +137,20 @@ VALUES('STEPAN', 'PEJCHAR', 'pejchar@randmail.com', 'VEVERI 12');
 INSERT INTO "MERCHANT" ("FIRST_NAME", "LAST_NAME", "EMAIL", "ADDRESS")
 VALUES('ONDREJ', 'CESKA', 'ceska@randmail.com', 'CESKA 1');
 
+INSERT INTO "SUPPLY" ("SUPPLY_DATE", "COMMISION_ID")
+VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
+INSERT INTO "SUPPLY" ("SUPPLY_DATE", "COMMISION_ID")
+VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
+
+INSERT INTO "PURCHASE" ("PURCHASE_DATE", "COMMISION_ID")
+VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
+INSERT INTO "PURCHASE" ("PURCHASE_DATE", "COMMISION_ID")
+VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
+
 INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
 VALUES(1, 100, (SELECT ID FROM PRODUCT WHERE NAME = 'APPLES' AND ORIGIN = 'FRANCE'));
+INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
+VALUES(1, 150, (SELECT ID FROM PRODUCT WHERE NAME = 'CUCUMBER' AND ORIGIN = 'FRANCE'));
 INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
 VALUES(0, 250, (SELECT ID FROM PRODUCT WHERE NAME = 'TOMATO'));
 INSERT INTO "REGISTER" ("TYPE", "AMOUNT_IN_KG", "PRODUCT_ID")
@@ -124,15 +165,6 @@ VALUES(0, (SELECT ID FROM REGISTER WHERE AMOUNT_IN_KG = 100),
           (SELECT ID FROM STORAGE_WORKER WHERE FIRST_NAME = 'DOMINIK' AND  LAST_NAME = 'MARTINU'), 
           (SELECT ID FROM MERCHANT WHERE FIRST_NAME = 'ONDREJ' AND LAST_NAME = 'CESKA'));
 
-INSERT INTO "SUPPLY" ("SUPPLY_DATE", "COMMISION_ID")
-VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
-INSERT INTO "SUPPLY" ("SUPPLY_DATE", "COMMISION_ID")
-VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
-
-INSERT INTO "PURCHASE" ("PURCHASE_DATE", "COMMISION_ID")
-VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
-INSERT INTO "PURCHASE" ("PURCHASE_DATE", "COMMISION_ID")
-VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 0));
 
 INSERT INTO "INVOICE" ("INVOICE_DATE", "COMMISION_ID")
 VALUES(TO_DATE('12.01.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE = 1));
@@ -141,9 +173,12 @@ VALUES(TO_DATE('09.02.2023', 'DD.MM.YYYY'), (SELECT ID FROM COMMISION WHERE TYPE
 
 ----------------------- SELECTING DATA---------------------------------------------
 --2 tables -- spoj tabulky register a product (v jakém rejstříku je jaký produkt)
-SELECT p.name, r.ID
+SELECT p.name, r.ID, p.IN_STOCK_IN_TONS, p.ORIGIN
 FROM product p
 JOIN register r ON p.id = r.product_id;
+
+SELECT s.FIRST_NAME, s.LAST_NAME, s.WAGE_IN_DOLLARS
+FROM storage_worker s;
 
 --2 tables -- spoj tabulky register a commision (v jaké zakázce je jaký rejstřík, kolik váží jeho produkt a kdo má zakázku má na starosti)
 SELECT s.register_id, r.amount_in_kg, s.STORAGE_WORKER_ID
@@ -166,14 +201,15 @@ GROUP BY p.origin;
 
 
 
-SELECT distinct c.id, c.type
-FROM product p, register c
+SELECT p.ID, p.NAME, p.ORIGIN
+FROM product p
 WHERE EXISTS (
-    SELECT 
-    FROM PRODUCT p, register c
-    JOIN register c ON p.id = c.product_id
-    WHERE p.origin = 'FRANCE'
-);
+    SELECT 1
+    FROM register c
+    WHERE p.ID = c.PRODUCT_ID AND p.ORIGIN = 'FRANCE'
+)
+GROUP BY p.ID, p.NAME, p.ORIGIN;
+
 -- This query returns the name of each product that has been purchased at least once.
 
 SELECT m.first_name, m.last_name, p.name
@@ -189,3 +225,4 @@ WHERE p.id IN (
     HAVING SUM(r2.amount_in_kg) > 1000
 );
 -- This query returns the first and last name of each merchant and the name of each product that has been purchased in total over 1000 kg.
+
